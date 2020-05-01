@@ -24,9 +24,6 @@ Finally we will upload the main cyclecloud-health project
 cd cyclecloud-health-cluster
 cyclecloud project upload <storage_container>
 ```
-
-
- 
-
-
+### Deployment
+cyclecloud import_cluster "cyclecloud-health" -f templates/slurm-cluster.txt -c slurm
 
