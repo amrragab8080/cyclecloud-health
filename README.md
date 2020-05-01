@@ -26,4 +26,6 @@ cyclecloud project upload <storage_container>
 ```
 ### Deployment
 ```cyclecloud import_cluster "cyclecloud-health" -f templates/slurm-cluster.txt -c slurm```
-![](imgs/dashboard.png?raw=true)
+<p align="center">
+  <src="https://github.com/amrragab8080/cyclecloud-health/blob/master/imgs/dashboard.png">
+</p>
