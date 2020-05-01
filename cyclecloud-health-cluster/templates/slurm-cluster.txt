@@ -79,7 +79,7 @@ Autoscale = $Autoscale
         [[[configuration]]]
 
         [[[cluster-init cyclecloud/slurm:master]]]
-        [[[cluster-init cyclecloud-covid:default:2.1.0]]]
+        [[[cluster-init cyclecloud-health:default:2.1.0]]]
         [[[cluster-init docker:default:1.0.3]]]
 
         [[[network-interface eth0]]]
@@ -100,7 +100,7 @@ Autoscale = $Autoscale
         slurm.hpc = true
 
         [[[cluster-init cyclecloud/slurm:execute]]]
-        [[[cluster-init cyclecloud-covid:default:2.1.0]]]
+        [[[cluster-init cyclecloud-health:default:2.1.0]]]
         [[[cluster-init docker:default:1.0.3]]]
 
         [[[network-interface eth0]]]
@@ -121,7 +121,7 @@ Autoscale = $Autoscale
         slurm.hpc = false
 
         [[[cluster-init cyclecloud/slurm:execute]]]
-        [[[cluster-init cyclecloud-covid:default:2.1.0]]]
+        [[[cluster-init cyclecloud-health:default:2.1.0]]]
         [[[cluster-init docker:default:1.0.3]]]
 
         [[[network-interface eth0]]]
@@ -140,7 +140,7 @@ Autoscale = $Autoscale
         slurm.hpc = false
 
         [[[cluster-init cyclecloud/slurm:execute]]]
-        [[[cluster-init cyclecloud-covid:default:2.1.0]]]
+        [[[cluster-init cyclecloud-health:default:2.1.0]]]
         [[[cluster-init docker:default:1.0.3]]]
 
         [[[network-interface eth0]]]
