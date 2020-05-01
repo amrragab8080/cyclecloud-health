@@ -1,4 +1,4 @@
-# Cyclecloud Health
+# CycleCloud Health
 A comprehensive compute cluster and data science platform targeted for healthcare and life sciences (HCLS) workloads. The motivation for this github is to
 help researchers get up and running quickly with a platform flexible for running a diverse range of HCLS workloads.
 ### Components
