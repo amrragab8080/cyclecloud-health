@@ -9,7 +9,22 @@ JupyterHub endpoint (Ubuntu 18.04) using the Azure DataScience including Slurm c
 4) Include docker/singularity
 
 Setup Azure CycleCloud according to the [documentation](https://docs.microsoft.com/en-us/azure/cyclecloud/qs-install-marketplace).
-After ```git clone --recursive```
+After ```git clone --recursive``` this repo we first need to upload the latest cyclecloud-docker project:
+```
+cd cyclecloud-docker
+cyclecloud project upload <storage_container>
+```
+Next we upload the datascience-vm project:
+```
+cd cyclecloud-data-science-vm
+cyclecloud project upload <storage_container>
+```
+Finally we will upload the main cyclecloud-health project
+```
+cd cyclecloud-health-cluster
+cyclecloud project upload <storage_container>
+```
+
 
  
 
