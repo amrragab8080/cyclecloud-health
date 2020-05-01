@@ -8,7 +8,9 @@ JupyterHub endpoint (Ubuntu 18.04) using the Azure DataScience including Slurm c
 3) GPU accelerated workloads (gpu)
 4) Include docker/singularity
 
-Setup Azure CycleCloud according to the [documentation](https://docs.microsoft.com/en-us/azure/cyclecloud/qs-install-marketplace)
+Setup Azure CycleCloud according to the [documentation](https://docs.microsoft.com/en-us/azure/cyclecloud/qs-install-marketplace).
+After ```git clone --recursive```
+
  
 
 
