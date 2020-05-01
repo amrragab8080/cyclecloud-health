@@ -1,0 +1,6 @@
+[submodule "cyclecloud-data-science-vm"]
+	path = cyclecloud-data-science-vm
+	url = https://github.com/Azure/cyclecloud-data-science-vm.git
+[submodule "cyclecloud-docker"]
+	path = cyclecloud-docker
+	url = https://github.com/Azure/cyclecloud-docker.git

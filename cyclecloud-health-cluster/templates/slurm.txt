@@ -1,0 +1,482 @@
+
+################################
+## Cluster Configuration File ##
+################################
+
+[cluster slurm]
+FormLayout = selectionpanel
+Category = Schedulers
+
+Autoscale = $Autoscale
+
+    [[node defaults]]
+    UsePublicNetwork = $UsePublicNetwork
+    Credentials = $Credentials    
+    SubnetId = $SubnetId
+    Region = $Region
+    KeyPairLocation = ~/.ssh/cyclecloud.pem
+    
+        [[[configuration]]]
+        slurm.version = $configuration_slurm_version
+        ganglia.install = false
+
+	[[[configuration docker.registry]]]
+        name = $DockerRegistryName
+        url = $DockerRegistryURL
+        username = $DockerRegistryUsername
+        password = $DockerRegistryPassword
+        email = $DockerRegistryEmail
+
+
+        [[[configuration cyclecloud.mounts.hpccache]]]
+        Optional = true
+        type = nfs
+        mountpoint = $local_mount
+        export_path = $nfs_export
+        options = hard,vers=3,nointr,proto=tcp,mountproto=tcp,retry=30
+        address = $server_address
+
+        [[[configuration cyclecloud.singularity]]]
+        version = $SingularityVersion
+
+        [[[cluster-init cyclecloud/slurm:default]]]
+
+
+    [[node datasciencevm]]
+    MachineType = $DSMMachineType
+    IsReturnProxy = ${configuration_dsvm_os == "windows" ? False : ReturnProxy}
+    InstallJetpack = true
+    JetpackPlatform = ${configuration_dsvm_jetpack_platform[configuration_dsvm_os]}
+    AwaitInstallation = true
+
+    Azure.Publisher = microsoft-ads
+    Azure.Offer = ${configuration_dsvm_offer[configuration_dsvm_os]}
+    Azure.ImageVersion = $configuration_dsvm_version
+    Azure.Sku = ${configuration_dsvm_sku[configuration_dsvm_os]}
+    ImageOS = ${configuration_dsvm_os == "windows" ? "windows" : "linux"}
+    AdditionalClusterInitSpecs = $DSMClusterInitSpecs
+    
+        [[[configuration]]]
+        cyclecloud.discoverable = true
+
+        [[[cluster-init data-science-vm:default:1.0.0]]]
+
+        [[[input-endpoint jupyterhub]]]
+        PrivatePort = 8000
+        PublicPort = 8000
+        Protocol = tcp
+
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $UsePublicNetwork
+
+
+    [[node master]]
+    MachineType = $MasterMachineType
+    ImageName = $MasterImageName
+    IsReturnProxy = $ReturnProxy
+    AdditionalClusterInitSpecs = $MasterClusterInitSpecs
+    
+        [[[configuration]]]
+
+        [[[cluster-init cyclecloud/slurm:master]]]
+        [[[cluster-init cyclecloud-covid:default:2.1.0]]]
+        [[[cluster-init docker:default:1.0.3]]]
+
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $UsePublicNetwork
+
+
+    [[nodearray hpc]]
+    MachineType = $HPCMachineType
+    ImageName = $HPCImageName
+    MaxCoreCount = $MaxHPCExecuteCoreCount
+    Azure.MaxScalesetSize = $HPCMaxScalesetSize
+    AdditionalClusterInitSpecs = $HPCClusterInitSpecs
+
+
+        [[[configuration]]]
+        slurm.autoscale = true
+        slurm.default_partition = true
+        slurm.hpc = true
+
+        [[[cluster-init cyclecloud/slurm:execute]]]
+        [[[cluster-init cyclecloud-covid:default:2.1.0]]]
+        [[[cluster-init docker:default:1.0.3]]]
+
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $ExecuteNodesPublic
+
+
+    [[nodearray htc]]
+    MachineType = $HTCMachineType
+    ImageName = $HTCImageName
+    MaxCoreCount = $MaxHTCExecuteCoreCount
+
+    Interruptible = $HTCUseLowPrio
+    AdditionalClusterInitSpecs = $HTCClusterInitSpecs
+
+
+        [[[configuration]]]
+        slurm.autoscale = true
+        slurm.hpc = false
+
+        [[[cluster-init cyclecloud/slurm:execute]]]
+        [[[cluster-init cyclecloud-covid:default:2.1.0]]]
+        [[[cluster-init docker:default:1.0.3]]]
+
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $ExecuteNodesPublic
+
+    [[nodearray gpu]]
+    MachineType = $GPUMachineType
+    ImageName = $GPUImageName
+    MaxCoreCount = $MaxGPUExecuteCoreCount
+    Interruptible = $GPUUseLowPrio
+    AdditionalClusterInitSpecs = $GPUClusterInitSpecs
+
+        [[[configuration]]]
+        slurm.autoscale = true
+        # Set to true if nodes are used for tightly-coupled multi-node jobs
+        slurm.hpc = false
+
+        [[[cluster-init cyclecloud/slurm:execute]]]
+        [[[cluster-init cyclecloud-covid:default:2.1.0]]]
+        [[[cluster-init docker:default:1.0.3]]]
+
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $ExecuteNodesPublic
+
+
+[parameters About]
+Order = 1
+
+    [[parameters About Slurm]]
+
+        [[[parameter slurm]]]
+        HideLabel = true
+        Config.Plugin = pico.widget.HtmlTemplateWidget
+        Config.Template := "<table><tr><td><img src='static/cloud/cluster/ui/ClusterIcon/slurm.png' width='192' height='192'></td></tr><tr><td><p>Slurm is a highly configurable open source workload manager. See the <a href=\"https://www.schedmd.com/\" target=\"_blank\">Slurm project site</a> for an overview.</p><p>Follow the instructions in the <a href=\"https://github.com/azure/cyclecloud-slurm/\" target=\"_blank\">README</a> for details on instructions on extending and configuring the Project for your environment.</p></td></tr></table>"
+
+[parameters Required Settings]
+Order = 10
+
+    [[parameters Cluster Virtual Machines ]]
+    Description = "The cluster, in this case, has two roles: the scheduler master-node with shared filer and the execute hosts. Configure which VM types to use based on the requirements of your application."
+    Order = 20
+
+        [[[parameter Region]]]
+        Label = Region
+        Description = Deployment Location
+        ParameterType = Cloud.Region
+        DefaultValue = eastus
+
+        [[[parameter MasterMachineType]]]
+        Label = Master VM Type
+        Description = The VM type for scheduler master and shared filer.
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D12_v2
+
+        [[[parameter HPCMachineType]]]
+        Label = HPC VM Type
+        Description = The VM type for HPC execute nodes
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D16s_v3
+
+        [[[parameter HTCMachineType]]]
+        Label = HTC VM Type
+        Description = The VM type for HTC execute nodes
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D16s_v3
+
+        [[[parameter GPUMachineType]]]
+        Label = GPU VM Type
+        Description = The VM type for HTC execute nodes
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_NC6_Promo
+
+    [[parameters Data Science VM Settings ]]
+    Description = "Section for configuring Data Science VM"
+    Order = 25
+
+        [[[parameter DSMMachineType]]]
+        Label = DSVM Machine Type
+        Description = The machine type for the DSVM server
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D16s_v3
+
+        [[[parameter configuration_dsvm_version]]]
+        required = True
+        label = Image Version
+        description = Version of the DSVM image to use
+        defaultvalue = latest
+
+        [[[parameter configuration_dsvm_os]]]
+        required = True
+        label = Operating System
+        description = OS of the DSVM image to use
+        defaultvalue = ubuntu-18
+        config.plugin = pico.control.AutoCompleteDropdown
+            [[[[list Config.Entries]]]]
+            Name = centos-7
+            Label = CentOS 7
+            [[[[list Config.Entries]]]]
+            Name = ubuntu-18
+            Label = Ubuntu 18
+
+        [[[parameter configuration_dsvm_sku]]]
+        required = True
+        label = Image SKU
+        parametertype = hidden
+            [[[[record DefaultValue]]]]
+            centos-7 = linuxdsvm
+            ubuntu-18 = linuxdsvmubuntu
+
+        [[[parameter configuration_dsvm_offer]]]
+        required = True
+        label = Image Offer
+        parametertype = hidden
+            [[[[record DefaultValue]]]]
+            centos-7 = linux-data-science-vm
+            ubuntu-18 = linux-data-science-vm-ubuntu
+
+        [[[parameter configuration_dsvm_jetpack_platform]]]
+        required = True
+        label = Jetpack Platform
+        parametertype = hidden
+            [[[[record DefaultValue]]]]
+            centos-7 = centos-7
+            ubuntu-18 = ubuntu-18.04
+
+        [[[parameter DSMClusterInitSpecs]]]
+        Label = DSM Cluster-Init
+        DefaultValue = =undefined
+        Description = Cluster init specs to apply to HPC execute nodes
+        ParameterType = Cloud.ClusterInitSpecs
+
+
+    [[parameters Auto-Scaling]]
+    Description = "The cluster can autoscale to the workload, adding execute hosts as jobs are queued. To enable this check the box below and choose the initial and maximum core counts for the cluster"
+    Order = 30
+
+        [[[parameter Autoscale]]]
+        Label = Autoscale
+        DefaultValue = true
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Start and stop execute instances automatically
+
+        [[[parameter MaxHPCExecuteCoreCount]]]
+        Label = Max HPC Cores
+        Description = The total number of HPC execute cores to start
+        DefaultValue = 100
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+
+        [[[parameter MaxHTCExecuteCoreCount]]]
+        Label = Max HTC Cores
+        Description = The total number of HTC execute cores to start
+        DefaultValue = 100
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+
+        [[[parameter HTCUseLowPrio]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for HTC execute hosts
+
+        [[[parameter MaxGPUExecuteCoreCount]]]
+        Label = Max GPU Cores
+        Description = The total number of GPU execute cores to start
+        DefaultValue = 100
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+
+        [[[parameter GPUUseLowPrio]]]
+        Label = Low Priority
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for GPU execute hosts
+
+        [[[parameter HPCMaxScalesetSize]]]
+        Label = Max VMs per Scaleset
+        Description = The maximum number of VMs created per VM Scaleset e.g. switch in Slurm.
+        DefaultValue = 100
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+
+    [[parameters Networking]]
+    Order = 40
+
+        [[[parameter SubnetId]]]
+        Label = Subnet ID
+        Description = Subnet Resource Path (ResourceGroup/VirtualNetwork/Subnet)
+        ParameterType = Azure.Subnet
+        Required = True
+
+[parameters Filesystems]
+Description = "Configure the NFS mounts."
+Order = 15
+
+    [[parameters HPCCache Settings]]
+    Order = 15
+
+        [[[parameter local_mount]]]
+        Label = Local Mount Point
+        Description = Location on local machine to mount the NFS export
+        DefaultValue = /nfs
+
+        [[[parameter nfs_export]]]
+        Label = NFS export
+        Description = The HPCCache namespace for clients to mount (ie. /mnt/exports/data)
+        DefaultValue = /mnt/exports/data
+
+        [[[parameter server_address]]]
+        Label = HPCCache Address
+        Description = The HPCCache IP
+
+
+[parameters Advanced Settings]
+Order = 20
+
+    [[parameters Azure Settings]]
+    Order = 10 
+
+        [[[parameter Credentials]]]
+        Description = The credentials for the cloud provider
+        ParameterType = Cloud.Credentials
+
+    [[parameters Slurm Settings ]]
+    Description = "Section for configuring Slurm"
+    Order = 5
+
+        [[[parameter configuration_slurm_version]]]
+        Required = True
+        Label = Slurm Version
+        Description = Version of Slurm to install on the cluster
+        ParameterType = StringList
+        Config.Plugin = pico.form.Dropdown
+        Config.FreeForm = true
+        Config.Entries := {[Value="19.05.5-1"], [Value="18.08.9-1"]}
+        DefaultValue = 19.05.5-1
+
+    
+    [[parameters Docker]]
+    Description = Configure the Docker Images to be preloaded on the instances
+    Order = 7
+
+        [[[parameter MasterDockerImages]]]
+        Label = Master Images
+        Description = The list of Docker images to preload on the Master Node
+        DefaultValue = registry
+
+        [[[parameter ExecuteDockerImages]]]
+        Label = Execute Images
+        Description = The list of Docker images to preload on the Execute Nodes
+
+        [[[parameter DockerRegistryName]]]
+        Label = Registry Name
+        Description = The name of the Docker registry to use
+	
+        [[[parameter DockerRegistryURL]]]
+        Label = Registry URL
+        Description = The URL of the Docker registry to use
+	
+        [[[parameter DockerRegistryUsername]]]
+        Label = Registry Username
+        Description = The Username for Docker registry access
+	
+        [[[parameter DockerRegistryPassword]]]
+        Label = Registry Password
+        Description = The Password for Docker registry access
+
+        [[[parameter DockerRegistryEmail]]]
+        Label = Registry Email
+        Description = The Email Address to use for Docker registry access (if required)
+
+    [[parameters Software]]
+    Description = "Specify the scheduling software, and base OS installed on all nodes, and optionally the cluster-init and chef versions from your Locker."
+    Order = 10
+
+        [[[parameter SingularityVersion]]]
+        Label = Singularity Version
+        Description = Singularity version to install
+        DefaultValue= 3.5.2
+
+        [[[parameter MasterImageName]]]
+        Label = Master OS
+        ParameterType = Cloud.Image
+        Config.OS = linux
+        DefaultValue = cycle.image.centos7
+        Config.Filter := Package in {"cycle.image.centos7", "cycle.image.ubuntu18"}
+
+        [[[parameter HPCImageName]]]
+        Label = HPC OS
+        ParameterType = Cloud.Image
+        Config.OS = linux
+        DefaultValue = cycle.image.centos7
+        Config.Filter := Package in {"cycle.image.centos7", "cycle.image.ubuntu18"}
+
+        [[[parameter HTCImageName]]]
+        Label = HTC OS
+        ParameterType = Cloud.Image
+        Config.OS = linux
+        DefaultValue = cycle.image.centos7
+        Config.Filter := Package in {"cycle.image.centos7", "cycle.image.ubuntu18"}
+
+        [[[parameter GPUImageName]]]
+        Label = GPU OS
+        ParameterType = Cloud.Image
+        Config.OS = linux
+        DefaultValue = cycle.image.centos7
+        Config.Filter := Package in {"cycle.image.centos7", "cycle.image.ubuntu18"}
+
+
+        [[[parameter MasterClusterInitSpecs]]]
+        Label = Master Cluster-Init
+        DefaultValue = =undefined
+        Description = Cluster init specs to apply to the master node
+        ParameterType = Cloud.ClusterInitSpecs
+    
+        [[[parameter HPCClusterInitSpecs]]]
+        Label = HPC Cluster-Init
+        DefaultValue = =undefined
+        Description = Cluster init specs to apply to HTC execute nodes
+        ParameterType = Cloud.ClusterInitSpecs
+        
+        [[[parameter HTCClusterInitSpecs]]]
+        Label = HTC Cluster-Init
+        DefaultValue = =undefined
+        Description = Cluster init specs to apply to HPC execute nodes
+        ParameterType = Cloud.ClusterInitSpecs
+	
+	[[[parameter GPUClusterInitSpecs]]]
+        Label = GPU Cluster-Init
+        DefaultValue = =undefined
+        Description = Cluster init specs to apply to HPC execute nodes
+        ParameterType = Cloud.ClusterInitSpecs
+
+    [[parameters Advanced Networking]]
+    Description = Advanced networking settings
+
+        [[[parameter ReturnProxy]]]
+        Label = Return Proxy
+        DefaultValue = false
+        ParameterType = Boolean
+        Config.Label = Use SSH tunnel to connect to CycleCloud (required if direct access is blocked)
+
+        [[[parameter UsePublicNetwork]]]
+        Label = Public Head Node
+        DefaultValue = true
+        ParameterType = Boolean
+        Config.Label = Access master node from the Internet
+
+        [[[parameter ExecuteNodesPublic]]]
+        Label = Public Execute
+        DefaultValue = false
+        ParameterType = Boolean
+        Config.Label = Access execute nodes from the Internet
+        Conditions.Excluded := UsePublicNetwork isnt true
